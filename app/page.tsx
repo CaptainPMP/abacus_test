@@ -1,113 +1,249 @@
-import Image from "next/image";
+"use client"
+import React, { useState } from "react";
+// import "./styles.css"; // Import your CSS file for styling
 
 export default function Home() {
-  return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <code className="font-mono font-bold">app/page.tsx</code>
-        </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:size-auto lg:bg-none">
-          <a
-            className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{" "}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className="dark:invert"
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
-        </div>
-      </div>
+  interface Operators {
+    [key: string]: boolean;
+  }
 
-      <div className="relative z-[-1] flex place-items-center before:absolute before:h-[300px] before:w-full before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-full after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700 before:dark:opacity-10 after:dark:from-sky-900 after:dark:via-[#0141ff] after:dark:opacity-40 sm:before:w-[480px] sm:after:w-[240px] before:lg:h-[360px]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
+  interface Test {
+    first: number[];
+    operator: string[];
+    second: number[];
+    answer: (string | number)[];
+    isCorrect: boolean[];
+  }
+
+  const getRandomInt = (min: number, max: number) => {
+    const minCeiled = Math.ceil(min);
+    const maxFloored = Math.floor(max);
+    return Math.floor(Math.random() * (maxFloored - minCeiled) + minCeiled);
+  };
+
+  const operatorsList = ["+", "-", "x", "÷"];
+
+  const [operators, setOperators] = useState<Operators>({
+    "+": false,
+    "-": false,
+    x: false,
+    "÷": false,
+  });
+
+  const [test, setTest] = useState<Test>({
+    first: [],
+    operator: [],
+    second: [],
+    answer: [],
+    isCorrect: [],
+  });
+
+  const [numQuestions, setNumQuestions] = useState<number>(5);
+  const [rangeStart, setRangeStart] = useState<number>(1);
+  const [rangeEnd, setRangeEnd] = useState<number>(10);
+
+  const changeOperator = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ): void => {
+    const key = event.target.name;
+    const value = event.target.checked;
+    setOperators((oldData) => ({
+      ...oldData,
+      [key]: value,
+    }));
+  };
+
+  const generateTest = (): void => {
+    const newTest: Test = {
+      first: [],
+      operator: [],
+      second: [],
+      answer: [],
+      isCorrect: [],
+    };
+
+    const checkedOperators = Object.keys(operators).filter(
+      (operator) => operators[operator]
+    );
+
+    for (let i = 0; i < numQuestions; i++) {
+      let a, b, selectedOperator, result: any;
+      do {
+        a = getRandomInt(rangeStart, rangeEnd);
+        b = getRandomInt(rangeStart, rangeEnd);
+        selectedOperator =
+          checkedOperators[
+            Math.floor(Math.random() * checkedOperators.length)
+          ];
+
+        switch (selectedOperator) {
+          case "+":
+            result = a + b;
+            break;
+          case "-":
+            result = a - b;
+            break;
+          case "x":
+            result = a * b;
+            break;
+          case "÷":
+            if (b === 0 || a % b !== 0) {
+              result = -1; // set invalid result if division is not valid
+            } else {
+              result = Math.floor(a / b); // ensure result is integer
+            }
+            break;
+          default:
+            break;
+        }
+      } while (result <= 0); // repeat until valid result is generated
+
+      newTest.first.push(a);
+      newTest.second.push(b);
+      newTest.operator.push(selectedOperator);
+      newTest.answer.push("");
+      newTest.isCorrect.push(true); // Initially assuming all answers are correct
+    }
+
+    setTest(newTest);
+  };
+
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    let score = 0;
+    const newIsCorrect: boolean[] = [];
+    test.answer.forEach((ans, index) => {
+      const operator = test.operator[index];
+      const result =
+        operator === "+"
+          ? test.first[index] + test.second[index]
+          : operator === "-"
+          ? test.first[index] - test.second[index]
+          : operator === "x"
+          ? test.first[index] * test.second[index]
+          : operator === "÷"
+          ? test.first[index] / test.second[index]
+          : NaN; // Handle invalid operators
+      const isCorrect = result === parseInt(ans.toString());
+      newIsCorrect.push(isCorrect);
+      if (isCorrect) score++;
+    });
+    setTest((oldTest) => ({ ...oldTest, isCorrect: newIsCorrect }));
+    alert(`Your score is ${score}/${test.answer.length}`);
+  };
+
+  const handleInputChange = (
+    event: React.ChangeEvent<HTMLInputElement>,
+    index: number
+  ) => {
+    const { value } = event.target;
+    const newAnswers = [...test.answer];
+    newAnswers[index] = value;
+    setTest((oldTest) => ({ ...oldTest, answer: newAnswers }));
+  };
+
+  const handleNumQuestionsChange = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const value = parseInt(event.target.value);
+    setNumQuestions(value);
+  };
+
+  const handleRangeStartChange = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const value = parseInt(event.target.value);
+    setRangeStart(value);
+  };
+
+  const handleRangeEndChange = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const value = parseInt(event.target.value);
+    setRangeEnd(value);
+  };
+
+  return (
+    <div className="max-w-3xl mx-auto p-6">
+  <h1 className="text-3xl font-bold mb-6 text-center">Abacus Test</h1>
+  <div className="flex items-center justify-center space-x-4 mb-6">
+    {Object.keys(operators).map((operator) => (
+      <label key={operator} className="flex items-center space-x-2">
+        <input
+          type="checkbox"
+          name={operator}
+          checked={operators[operator]}
+          onChange={changeOperator}
+        />
+        <span className="text-lg font-semibold">{operator}</span>
+      </label>
+    ))}
+    <button
+      className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+      onClick={generateTest}
+    >
+      Generate the Test
+    </button>
+  </div>
+
+  <div className="mb-6">
+    <label className="block mb-2">
+      Number of Questions:
+      <input
+        type="number"
+        value={numQuestions}
+        onChange={handleNumQuestionsChange}
+        className="block w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:border-blue-500"
+      />
+    </label>
+  </div>
+
+  <div className="flex items-center justify-center space-x-4 mb-6">
+    <label className="block">
+      Range Start:
+      <input
+        type="number"
+        value={rangeStart}
+        onChange={handleRangeStartChange}
+        className="border border-gray-300 rounded-md p-2 focus:outline-none focus:border-blue-500"
+      />
+    </label>
+    <label className="block">
+      Range End:
+      <input
+        type="number"
+        value={rangeEnd}
+        onChange={handleRangeEndChange}
+        className="border border-gray-300 rounded-md p-2 focus:outline-none focus:border-blue-500"
+      />
+    </label>
+  </div>
+
+  <form onSubmit={handleSubmit}>
+    {test.first.map((num, index) => (
+      <div key={index} className="flex items-center mb-4">
+        <span className="text-lg font-semibold">
+          {num} {test.operator[index]} {test.second[index]} =
+        </span>
+        <input
+          type="number"
+          name={`answer-${index}`}
+          value={test.answer[index]}
+          onChange={(e) => handleInputChange(e, index)}
+          className={`border border-gray-300 rounded-md p-2 ml-2 w-20 text-center ${
+            test.isCorrect[index] ? "bg-green-100" : "bg-red-100"
+          }`}
         />
       </div>
+    ))}
+    <button
+      type="submit"
+      className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+    >
+      Submit Test
+    </button>
+  </form>
+</div>
 
-      <div className="mb-32 grid text-center lg:mb-0 lg:w-full lg:max-w-5xl lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Docs{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Learn{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Templates{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Explore starter templates for Next.js.
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Deploy{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-balance text-sm opacity-50">
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
   );
 }
